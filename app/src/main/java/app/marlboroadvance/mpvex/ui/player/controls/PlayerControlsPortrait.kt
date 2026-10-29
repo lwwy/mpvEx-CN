@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +35,7 @@ import app.marlboroadvance.mpvex.ui.player.PlayerActivity
 import app.marlboroadvance.mpvex.ui.player.PlayerViewModel
 import app.marlboroadvance.mpvex.ui.player.Sheets
 import app.marlboroadvance.mpvex.ui.player.VideoAspect
+import app.marlboroadvance.mpvex.ui.player.controls.components.BatteryIndicator
 import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsButton
 import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsGroup
 import app.marlboroadvance.mpvex.ui.theme.controlColor
@@ -141,6 +143,12 @@ fun TopPlayerControlsPortrait(
           }
         }
       }
+      
+      // 👇 新增部分：把电量推到最右侧
+      Spacer(modifier = Modifier.weight(1f))
+      
+      // 显示电量组件
+      BatteryIndicator(modifier = Modifier.padding(end = 16.dp))
     }
   }
 }
@@ -196,4 +204,3 @@ fun BottomPlayerControlsPortrait(
     }
   }
 }
-
