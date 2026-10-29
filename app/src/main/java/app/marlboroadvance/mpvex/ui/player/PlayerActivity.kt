@@ -491,29 +491,44 @@ class PlayerActivity :
   }
 
   @RequiresApi(Build.VERSION_CODES.P)
-  private fun handleBackPress() {
-    // Dismiss overlays first
-    if (viewModel.sheetShown.value != Sheets.None) {
-      viewModel.sheetShown.update { Sheets.None }
-      viewModel.showControls()
-      return
-    }
-
-    if (viewModel.panelShown.value != Panels.None) {
-      viewModel.panelShown.update { Panels.None }
-      viewModel.showControls()
-      return
-    }
-
-    // Check if auto PIP is enabled - enter PIP mode instead of finishing
-    if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
-      pipHelper.enterPipMode()
-      return
-    }
-
-    isUserFinishing = true
-    finish()
+private fun handleBackPress() {
+  // 👇 1. 最优先检查：如果界面处于锁定状态，直接拦截返回键，什么都不做
+  // 注意：如果下面这行报红，请去 PlayerViewModel.kt 里搜索 "lock" 看看确切的变量名
+  val isLocked = try {
+    viewModel.controlsLocked.value
+  } catch (e: Exception) {
+    false
   }
+
+  if (isLocked) {
+    // 可选：给个轻提示，让你知道是锁屏在起作用
+    android.widget.Toast.makeText(this, "播放器已锁定，请先解锁", android.widget.Toast.LENGTH_SHORT).show()
+    return
+  }
+
+  // 👇 2. Dismiss overlays first (原本的逻辑)
+  if (viewModel.sheetShown.value != Sheets.None) {
+    viewModel.sheetShown.update { Sheets.None }
+    viewModel.showControls()
+    return
+  }
+
+  if (viewModel.panelShown.value != Panels.None) {
+    viewModel.panelShown.update { Panels.None }
+    viewModel.showControls()
+    return
+  }
+
+  // 👇 3. Check if auto PIP is enabled - enter PIP mode instead of finishing
+  if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
+    pipHelper.enterPipMode()
+    return
+  }
+
+  // 👇 4. 正常退出
+  isUserFinishing = true
+  finish()
+}
 
 @RequiresApi(Build.VERSION_CODES.P)
 private fun setupPlayerControls() {
