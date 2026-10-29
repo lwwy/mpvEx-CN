@@ -490,19 +490,12 @@ class PlayerActivity :
     )
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
+@RequiresApi(Build.VERSION_CODES.P)
 private fun handleBackPress() {
-  // 👇 1. 最优先检查：如果界面处于锁定状态，直接拦截返回键，什么都不做
-  // 注意：如果下面这行报红，请去 PlayerViewModel.kt 里搜索 "lock" 看看确切的变量名
-  val isLocked = try {
-    viewModel.controlsLocked.value
-  } catch (e: Exception) {
-    false
-  }
-
-  if (isLocked) {
-    // 可选：给个轻提示，让你知道是锁屏在起作用
-    android.widget.Toast.makeText(this, "播放器已锁定，请先解锁", android.widget.Toast.LENGTH_SHORT).show()
+  // 👇 1. 最优先：检查界面是否处于锁定状态
+  if (viewModel.areControlsLocked.value) {
+    // 如果锁定了，弹出提示并直接拦截，不执行任何退出操作
+    android.widget.Toast.makeText(this, "播放器已锁定，请先点击屏幕解锁", android.widget.Toast.LENGTH_SHORT).show()
     return
   }
 
@@ -519,13 +512,13 @@ private fun handleBackPress() {
     return
   }
 
-  // 👇 3. Check if auto PIP is enabled - enter PIP mode instead of finishing
+  // 👇 3. Check if auto PIP is enabled
   if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
     pipHelper.enterPipMode()
     return
   }
 
-  // 👇 4. 正常退出
+  // 👇 4. 正常退出（如果没锁，按一下直接退）
   isUserFinishing = true
   finish()
 }
