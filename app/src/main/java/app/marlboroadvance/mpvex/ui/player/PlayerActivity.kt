@@ -536,7 +536,7 @@ private fun setupPlayerControls() {
         BatteryIndicator(
           modifier = Modifier
             .align(Alignment.TopEnd)
-            .padding(top = 6.dp, end = 10.dp)
+            .padding(top = 12.dp, end = 24.dp)
         )
         
       }
