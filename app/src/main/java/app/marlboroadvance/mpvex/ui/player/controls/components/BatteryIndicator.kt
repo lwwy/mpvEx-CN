@@ -61,47 +61,46 @@ fun BatteryIndicator(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 电池外壳（放大了尺寸）
+        // 电池外壳（尺寸加大以适配大字号）
         Box(
             modifier = Modifier
-                .width(54.dp)   // 从 38 放大到 54
-                .height(26.dp)  // 从 18 放大到 26
-                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(6.dp)) // 加深一点底色，在白画面下更清晰
-                .border(2.dp, frameColor, RoundedCornerShape(6.dp)) // 2dp 粗边框
-                .padding(3.dp), // 内部留白
+                .width(70.dp)   // 👈 放大到 70
+                .height(34.dp)  // 👈 放大到 34
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) 
+                .border(2.5.dp, frameColor, RoundedCornerShape(8.dp)) // 边框稍微加粗
+                .padding(3.dp), // 内部留白，让直角绿条不会贴死外框
             contentAlignment = Alignment.Center
         ) {
-            // 内部电量填充条
+            // 内部电量填充条（直角填充）
             Box(
                 modifier = Modifier
                     .fillMaxWidth(fraction = batteryLevel / 100f)
                     .fillMaxHeight()
-                    .background(batteryColor, RoundedCornerShape(2.dp))
+                    .background(batteryColor) // 👈 去掉了 RoundedCornerShape，纯直角填充
                     .align(Alignment.CenterStart)
             )
             
-            // 电量数字（绝对居中修正）
+            // 电量数字（放大字号）
             Text(
                 text = batteryLevel.toString(),
                 color = Color.White,
-                fontSize = 15.sp,          // 调大字号
-                lineHeight = 15.sp,        // 👈 关键：强制行高等于字号，避免文字偏下
+                fontSize = 22.sp,          // 👈 放大到 22sp
+                lineHeight = 22.sp,        // 强制行高，绝对居中
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
                 style = LocalTextStyle.current.copy(
-                    // 禁用系统默认的字体上下留白
                     platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                    shadow = Shadow(color = Color.Black, blurRadius = 3f, offset = Offset(1.5f, 1.5f))
+                    shadow = Shadow(color = Color.Black, blurRadius = 4f, offset = Offset(2f, 2f)) // 阴影稍微加大
                 )
             )
         }
         
-        // 电池右侧正极凸起
+        // 电池右侧正极凸起（相应放大）
         Box(
             modifier = Modifier
-                .width(3.dp)
-                .height(12.dp)
-                .background(frameColor, RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
+                .width(4.dp)    // 👈 放大到 4dp
+                .height(16.dp)  // 👈 放大到 16dp
+                .background(frameColor, RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
         )
     }
 }
