@@ -318,40 +318,48 @@ class PlayerActivity :
    * Listener for audio focus changes.
    */
   private val audioFocusChangeListener =
-    AudioManager.OnAudioFocusChangeListener { focusChange ->
-      when (focusChange) {
-        AudioManager.AUDIOFOCUS_LOSS,
-        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-          -> {
-          // Save current state to restore later
-          val oldRestore = restoreAudioFocus
-          val wasPlayerPaused = viewModel.paused ?: false
+  AudioManager.OnAudioFocusChangeListener { focusChange ->
+    when (focusChange) {
+      AudioManager.AUDIOFOCUS_LOSS,
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+        -> {
+        // 记录当前暂停前的状态
+        val oldRestore = restoreAudioFocus
+        val wasPlayerPaused = viewModel.paused ?: false
+        
+        if (!wasPlayerPaused) {
           viewModel.pause()
+          // 👇 优化：在恢复焦点时，不仅恢复 UI，还要直接命令底层 MPV 解除暂停
           restoreAudioFocus = {
             oldRestore()
-            if (!wasPlayerPaused) viewModel.unpause()
+            MPVLib.setPropertyBoolean("pause", false) // 强行唤醒底层 C++ 引擎
+            viewModel.unpause() // 恢复界面状态
+            restoreAudioFocus = {} // 防止重复触发
           }
-        }
-
-        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-          // Lower volume temporarily
-          MPVLib.command("multiply", "volume", "0.5")
-          restoreAudioFocus = {
-            MPVLib.command("multiply", "volume", "2")
-          }
-        }
-
-        AudioManager.AUDIOFOCUS_GAIN -> {
-          // Restore previous audio state
-          restoreAudioFocus()
+        } else {
           restoreAudioFocus = {}
         }
+      }
 
-        AudioManager.AUDIOFOCUS_REQUEST_FAILED -> {
-          Log.d(TAG, "Audio focus request failed")
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+        // Lower volume temporarily
+        MPVLib.command("multiply", "volume", "0.5")
+        restoreAudioFocus = {
+          MPVLib.command("multiply", "volume", "2")
+          restoreAudioFocus = {}
         }
       }
+
+      AudioManager.AUDIOFOCUS_GAIN -> {
+        // 亮屏或通话结束，执行刚才保存的恢复动作
+        restoreAudioFocus()
+      }
+
+      AudioManager.AUDIOFOCUS_REQUEST_FAILED -> {
+        Log.d(TAG, "Audio focus request failed")
+      }
     }
+  }
 
   @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -528,8 +536,7 @@ private fun setupPlayerControls() {
         BatteryIndicator(
           modifier = Modifier
             .align(Alignment.TopEnd)
-            .statusBarsPadding()
-            .padding(top = 24.dp, end = 32.dp)
+            .padding(top = 6.dp, end = 10.dp)
         )
         
       }
@@ -875,34 +882,46 @@ private fun setupPipHelper() {
     super.onStop()
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
-  override fun onStart() {
-    super.onStart()
+@RequiresApi(Build.VERSION_CODES.P)
+override fun onStart() {
+  super.onStart()
 
-    runCatching {
-      setupWindowFlags()
-      setupSystemUI()
+  runCatching {
+    setupWindowFlags()
+    setupSystemUI()
 
-      if (!noisyReceiverRegistered) {
-        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(noisyReceiver, filter)
-        noisyReceiverRegistered = true
+    if (!noisyReceiverRegistered) {
+      val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+      registerReceiver(noisyReceiver, filter)
+      noisyReceiverRegistered = true
+    }
+
+    if (playerPreferences.rememberBrightness.get()) {
+      val brightness = playerPreferences.defaultBrightness.get()
+      if (brightness != BRIGHTNESS_NOT_SET) {
+        viewModel.changeBrightnessTo(brightness)
       }
+    }
+    
+    // Reset manual background playback flag when returning to foreground
+    isManualBackgroundPlayback = false
 
-      if (playerPreferences.rememberBrightness.get()) {
-        val brightness = playerPreferences.defaultBrightness.get()
-        if (brightness != BRIGHTNESS_NOT_SET) {
-          viewModel.changeBrightnessTo(brightness)
+    // 👇 新增：亮屏或切回前台时的双保险唤醒逻辑
+    if (wasPlayingBeforePause) {
+      lifecycleScope.launch {
+        delay(300) // 给系统一点时间重新分配音频焦点
+        // 如果当前处于暂停状态，强制恢复底层播放和UI状态
+        if (viewModel.paused == true) {
+          MPVLib.setPropertyBoolean("pause", false)
+          viewModel.unpause()
         }
       }
-      
-      // Reset manual background playback flag when returning to foreground
-      isManualBackgroundPlayback = false
-    }.onFailure { e ->
-      Log.e(TAG, "Error during onStart", e)
     }
+    
+  }.onFailure { e ->
+    Log.e(TAG, "Error during onStart", e)
   }
-
+}
   private fun setupWindowFlags() {
     pipHelper.updatePictureInPictureParams()
     WindowCompat.setDecorFitsSystemWindows(window, false)
