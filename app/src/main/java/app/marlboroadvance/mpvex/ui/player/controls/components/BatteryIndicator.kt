@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -58,49 +59,49 @@ fun BatteryIndicator(modifier: Modifier = Modifier) {
     val frameColor = Color.White
 
     Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
+    modifier = modifier,
+    verticalAlignment = Alignment.CenterVertically
+) {
+    // 电池外壳（尺寸保持不变）
+    Box(
+        modifier = Modifier
+            .width(70.dp)   
+            .height(34.dp)  
+            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) 
+            .border(2.5.dp, frameColor, RoundedCornerShape(8.dp)) 
+            .padding(3.dp), 
+        contentAlignment = Alignment.Center
     ) {
-        // 电池外壳（尺寸加大以适配大字号）
+        // 内部电量填充条
         Box(
             modifier = Modifier
-                .width(70.dp)   // 👈 放大到 70
-                .height(34.dp)  // 👈 放大到 34
-                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) 
-                .border(2.5.dp, frameColor, RoundedCornerShape(8.dp)) // 边框稍微加粗
-                .padding(3.dp), // 内部留白，让直角绿条不会贴死外框
-            contentAlignment = Alignment.Center
-        ) {
-            // 内部电量填充条（直角填充）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(fraction = batteryLevel / 100f)
-                    .fillMaxHeight()
-                    .background(batteryColor) // 👈 去掉了 RoundedCornerShape，纯直角填充
-                    .align(Alignment.CenterStart)
-            )
-            
-            // 电量数字（放大字号）
-            Text(
-                text = batteryLevel.toString(),
-                color = Color.White,
-                fontSize = 22.sp,          // 👈 放大到 22sp
-                lineHeight = 22.sp,        // 强制行高，绝对居中
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                style = LocalTextStyle.current.copy(
-                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                    shadow = Shadow(color = Color.Black, blurRadius = 4f, offset = Offset(2f, 2f)) // 阴影稍微加大
-                )
-            )
-        }
+                .fillMaxWidth(fraction = batteryLevel / 100f)
+                .fillMaxHeight()
+                .background(batteryColor) 
+                .align(Alignment.CenterStart)
+        )
         
-        // 电池右侧正极凸起（相应放大）
-        Box(
-            modifier = Modifier
-                .width(4.dp)    // 👈 放大到 4dp
-                .height(16.dp)  // 👈 放大到 16dp
-                .background(frameColor, RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+        // 电量数字（放大到 24sp，并向上微调）
+        Text(
+            text = batteryLevel.toString(),
+            color = Color.White,
+            fontSize = 24.sp,          // 👈 字号加大到 24
+            lineHeight = 24.sp,        // 👈 行高同步
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.offset(y = (-1).dp), // 👈 核心微调：整体向上偏移 1dp，解决字体偏下的视觉错觉
+            style = LocalTextStyle.current.copy(
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                shadow = Shadow(color = Color.Black, blurRadius = 4f, offset = Offset(2f, 2f))
+            )
         )
     }
-}
+    
+    // 电池右侧正极凸起（保持不变）
+    Box(
+        modifier = Modifier
+            .width(4.dp)    
+            .height(16.dp)  
+            .background(frameColor, RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+    )
+    }
