@@ -9,11 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,10 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -49,29 +52,43 @@ fun BatteryIndicator(modifier: Modifier = Modifier) {
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    // 颜色逻辑：>20% 绿色，<=20% 红色
-    val batteryColor = if (batteryLevel > 20) Color(0xFF4CAF50) else Color(0xFFF44336)
-    val borderColor = Color.White.copy(alpha = 0.5f)
+    // 颜色：>20% 绿色，<=20% 红色
+    val batteryColor = if (batteryLevel > 20) Color(0xFF67C23A) else Color(0xFFF56C6C)
+    val frameColor = Color.White
 
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 电池主体
+        // 电池外壳
         Box(
             modifier = Modifier
-                .background(batteryColor, shape = RoundedCornerShape(4.dp))
-                .border(1.dp, borderColor, shape = RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .width(38.dp)  // 稍微加宽，给数字留出空间
+                .height(18.dp) // 高度
+                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp)) // 半透明黑底，防止在亮色画面上白框看不清
+                .border(1.5.dp, frameColor, RoundedCornerShape(4.dp)) // 白色粗边框
+                .padding(2.dp), // 边框和内部填充的间隙
             contentAlignment = Alignment.Center
         ) {
+            // 内部电量填充条
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = batteryLevel / 100f) // 宽度根据电量变化
+                    .fillMaxHeight()
+                    .background(batteryColor, RoundedCornerShape(1.dp))
+                    .align(Alignment.CenterStart) // 靠左排列
+            )
+            
+            // 电量数字
             Text(
                 text = batteryLevel.toString(),
                 color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.widthIn(min = 20.dp),
-                textAlign = TextAlign.Center
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                // 加个黑色阴影，确保在绿色底和透明底上都清晰可见
+                style = LocalTextStyle.current.copy(
+                    shadow = Shadow(color = Color.Black, blurRadius = 2f, offset = Offset(1f, 1f))
+                )
             )
         }
         
@@ -79,8 +96,8 @@ fun BatteryIndicator(modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .width(2.dp)
-                .height(6.dp)
-                .background(batteryColor, shape = RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp))
+                .height(8.dp)
+                .background(frameColor, RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp))
         )
     }
 }
