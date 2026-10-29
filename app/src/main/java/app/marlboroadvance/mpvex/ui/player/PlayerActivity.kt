@@ -536,6 +536,12 @@ private fun setupPlayerControls() {
     }
   }
 }
+/**
+ * 初始化画中画 (Picture-in-Picture) 辅助类
+ */
+private fun setupPipHelper() {
+  pipHelper = MPVPipHelper(activity = this, mpvView = player)
+}
   private fun setupAudio() {
     audioPreferences.audioChannels.get().let {
       runCatching {
