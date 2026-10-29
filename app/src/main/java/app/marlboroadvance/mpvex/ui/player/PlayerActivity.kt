@@ -28,7 +28,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -44,6 +50,7 @@ import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import app.marlboroadvance.mpvex.preferences.PlayerPreferences
 import app.marlboroadvance.mpvex.preferences.SubtitlesPreferences
 import app.marlboroadvance.mpvex.ui.player.controls.PlayerControls
+import app.marlboroadvance.mpvex.ui.player.controls.components.BatteryIndicator
 import app.marlboroadvance.mpvex.ui.theme.MpvexTheme
 import app.marlboroadvance.mpvex.utils.history.RecentlyPlayedOps
 import app.marlboroadvance.mpvex.utils.media.HttpUtils
@@ -500,10 +507,14 @@ class PlayerActivity :
     finish()
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
-  private fun setupPlayerControls() {
-    binding.controls.setContent {
-      MpvexTheme {
+@RequiresApi(Build.VERSION_CODES.P)
+private fun setupPlayerControls() {
+  binding.controls.setContent {
+    MpvexTheme {
+      // 👇 新增的 Box 容器，铺满全屏
+      Box(modifier = Modifier.fillMaxSize()) {
+        
+        // 原本的控制栏
         PlayerControls(
           viewModel = viewModel,
           onBackPress = {
@@ -512,17 +523,19 @@ class PlayerActivity :
           },
           modifier = Modifier,
         )
+
+        // 👇 常驻电量组件，钉在右上角
+        BatteryIndicator(
+          modifier = Modifier
+            .align(Alignment.TopEnd)
+            .statusBarsPadding()
+            .padding(top = 16.dp, end = 16.dp)
+        )
+        
       }
     }
   }
-
-  /**
-   * Initializes the Picture-in-Picture helper.
-   */
-  private fun setupPipHelper() {
-    pipHelper = MPVPipHelper(activity = this, mpvView = player)
-  }
-
+}
   private fun setupAudio() {
     audioPreferences.audioChannels.get().let {
       runCatching {
