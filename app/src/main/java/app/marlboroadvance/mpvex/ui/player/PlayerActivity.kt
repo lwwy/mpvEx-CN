@@ -529,7 +529,7 @@ private fun setupPlayerControls() {
           modifier = Modifier
             .align(Alignment.TopEnd)
             .statusBarsPadding()
-            .padding(top = 16.dp, end = 16.dp)
+            .padding(top = 24.dp, end = 32.dp)
         )
         
       }
