@@ -35,7 +35,6 @@ import app.marlboroadvance.mpvex.ui.player.PlayerActivity
 import app.marlboroadvance.mpvex.ui.player.PlayerViewModel
 import app.marlboroadvance.mpvex.ui.player.Sheets
 import app.marlboroadvance.mpvex.ui.player.VideoAspect
-import app.marlboroadvance.mpvex.ui.player.controls.components.BatteryIndicator
 import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsButton
 import app.marlboroadvance.mpvex.ui.theme.controlColor
 import app.marlboroadvance.mpvex.ui.theme.spacing
@@ -167,9 +166,6 @@ fun TopRightPlayerControlsLandscape(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
   ) {
-    // 👇 新增部分：把电池组件放在横屏右上角按钮组的最前面
-    BatteryIndicator(modifier = Modifier.padding(end = 4.dp))
-    
     buttons.forEach { button ->
       RenderPlayerButton(
         button = button,
