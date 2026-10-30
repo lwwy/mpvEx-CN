@@ -363,17 +363,23 @@ class PlayerActivity :
 
   @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
-  enableEdgeToEdge()
   super.onCreate(savedInstanceState)
 
-  // 👇 核心新增：在加载视图前，瞬间强行隐藏系统状态栏，防止闪现
+  // 👇 核心1：暴力全屏！必须在 setContentView 之前，这是干掉启动闪屏的终极杀器
+  window.setFlags(
+      WindowManager.LayoutParams.FLAG_FULLSCREEN,
+      WindowManager.LayoutParams.FLAG_FULLSCREEN
+  )
+
+  // 👇 核心2：隐藏系统栏（你原有的）
   val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
   windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
   windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
 
   setContentView(binding.root)
   
-  // ... 下面的 volumeControlStream 等原有代码保持不动 ...
+  // ... 下面原本的代码（setupMPV, setupAudio 等）保持不变 ...
+  
 
     // OPTIMIZATION: Set volume control stream so hardware buttons control media volume
     volumeControlStream = AudioManager.STREAM_MUSIC
@@ -951,36 +957,29 @@ override fun onStart() {
   }
 
   @RequiresApi(Build.VERSION_CODES.P)
-  private fun setupSystemUI() {
-    window.attributes.layoutInDisplayCutoutMode =
-      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+private fun setupSystemUI() {
+  window.attributes.layoutInDisplayCutoutMode =
+    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 
-    // Set status bar color for when it will be shown (with controls)
-    if (playerPreferences.showSystemStatusBar.get()) {
-      window.statusBarColor = android.graphics.Color.parseColor("#80000000") // Semi-transparent black
+  try {
+    windowInsetsController.apply {
+      // 👇 强制无动画隐藏状态栏和导航栏
+      hide(WindowInsetsCompat.Type.statusBars(), true)
+      hide(WindowInsetsCompat.Type.navigationBars(), true)
+      systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
-
-    // Always start with status bar hidden - it will show when controls are shown
-    try {
-      windowInsetsController.apply {
-        hide(WindowInsetsCompat.Type.statusBars())
-        hide(WindowInsetsCompat.Type.navigationBars())
-        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "Failed to setup system UI insets", e)
-    }
-
-    // Don't use LOW_PROFILE if we plan to show status bar with controls
-    // LOW_PROFILE causes only icons to show without background
-    @Suppress("DEPRECATION")
-    binding.root.systemUiVisibility =
-      View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-        View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-        if (playerPreferences.showSystemStatusBar.get()) 0 else View.SYSTEM_UI_FLAG_LOW_PROFILE
+  } catch (e: Exception) {
+    Log.e(TAG, "Failed to setup system UI insets", e)
   }
 
+  // 👇 核心修改：把原来的 if 判断删掉，强制加上 FULLSCREEN
+  @Suppress("DEPRECATION")
+  binding.root.systemUiVisibility =
+    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+      View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+      View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+      View.SYSTEM_UI_FLAG_FULLSCREEN // 强制全屏，无视设置里的开关
+}
   @RequiresApi(Build.VERSION_CODES.P)
   private fun restoreSystemUI() {
     // Clear flags first for immediate effect
