@@ -364,7 +364,8 @@ class PlayerActivity :
   @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
-
+  // 👇 杀手锏 1：禁用 Activity 之间的过渡动画，防止系统在切换时画状态栏
+    overridePendingTransition(0, 0)
   // 👇 核心1：暴力全屏！必须在 setContentView 之前，这是干掉启动闪屏的终极杀器
   window.setFlags(
       WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -463,7 +464,6 @@ class PlayerActivity :
     if (playerPreferences.orientation.get() != PlayerOrientation.Video) {
       setOrientation()
     }
-
     // Apply persisted shuffle state after playlist is loaded
     viewModel.applyPersistedShuffleState()
 
@@ -471,6 +471,25 @@ class PlayerActivity :
       WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
   }
 
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+  super.onWindowFocusChanged(hasFocus)
+  if (hasFocus) {
+    // 👇 杀手锏 2：只要系统敢把状态栏拉出来，获取焦点时瞬间再次隐藏
+    val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+    windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+    
+    // 保底：强制全屏 Flag
+    window.decorView.systemUiVisibility = (
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        or View.SYSTEM_UI_FLAG_FULLSCREEN
+        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    )
+  }
+  }
   override fun attachBaseContext(newBase: Context?) {
     if (newBase == null) {
       super.attachBaseContext(null)
