@@ -362,41 +362,28 @@ class PlayerActivity :
   }
 
   @RequiresApi(Build.VERSION_CODES.P)
-  override fun onCreate(savedInstanceState: Bundle?) {
+override fun onCreate(savedInstanceState: Bundle?) {
+  enableEdgeToEdge()
   super.onCreate(savedInstanceState)
-  // 👇 杀手锏 1：禁用 Activity 之间的过渡动画，防止系统在切换时画状态栏
-    overridePendingTransition(0, 0)
-  // 👇 核心1：暴力全屏！必须在 setContentView 之前，这是干掉启动闪屏的终极杀器
-  window.setFlags(
-      WindowManager.LayoutParams.FLAG_FULLSCREEN,
-      WindowManager.LayoutParams.FLAG_FULLSCREEN
-  )
-
-  // 👇 核心2：隐藏系统栏（你原有的）
-  val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-  windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-  windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-
   setContentView(binding.root)
-  
-  // ... 下面原本的代码（setupMPV, setupAudio 等）保持不变 ...
-  
 
-    // OPTIMIZATION: Set volume control stream so hardware buttons control media volume
-    volumeControlStream = AudioManager.STREAM_MUSIC
+  // OPTIMIZATION: Set volume control stream so hardware buttons control media volume
+  volumeControlStream = AudioManager.STREAM_MUSIC
 
-    player.decoderOverride =
-      intent.getStringExtra(EXTRA_DECODER_OVERRIDE)?.let { value ->
-        Decoder.priorityModes.firstOrNull { it.value == value }
-      }
-    setupMPV()
-    startAnime4KSafetyMonitor()
-    MediaPlaybackService.createNotificationChannel(this)
-    setupAudio()
-    setupBackPressHandler()
-    setupPlayerControls()
-    setupPipHelper()
-    setupMediaSession()
+  player.decoderOverride =
+    intent.getStringExtra(EXTRA_DECODER_OVERRIDE)?.let { value ->
+      Decoder.priorityModes.firstOrNull { it.value == value }
+    }
+  setupMPV()
+  startAnime4KSafetyMonitor()
+  MediaPlaybackService.createNotificationChannel(this)
+  setupAudio()
+  setupBackPressHandler()
+  setupPlayerControls()
+  setupPipHelper()
+  setupMediaSession()
+
+  // ... 下面的代码（playlistId、fileName、getPlayableUri 等）保持你原来的样子完全不变 ...
 
     playlistId = intent.getIntExtra("playlist_id", -1).takeIf { it != -1 }
     playlistIndex = intent.getIntExtra("playlist_index", 0)
@@ -471,25 +458,7 @@ class PlayerActivity :
       WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
   }
 
-  override fun onWindowFocusChanged(hasFocus: Boolean) {
-  super.onWindowFocusChanged(hasFocus)
-  if (hasFocus) {
-    // 👇 杀手锏 2：只要系统敢把状态栏拉出来，获取焦点时瞬间再次隐藏
-    val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-    windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-    
-    // 保底：强制全屏 Flag
-    window.decorView.systemUiVisibility = (
-        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-    )
-  }
-  }
+
   override fun attachBaseContext(newBase: Context?) {
     if (newBase == null) {
       super.attachBaseContext(null)
@@ -980,9 +949,14 @@ private fun setupSystemUI() {
   window.attributes.layoutInDisplayCutoutMode =
     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 
+  // Set status bar color for when it will be shown (with controls)
+  if (playerPreferences.showSystemStatusBar.get()) {
+    window.statusBarColor = android.graphics.Color.parseColor("#80000000") // Semi-transparent black
+  }
+
+  // Always start with status bar hidden - it will show when controls are shown
   try {
     windowInsetsController.apply {
-      // 👇 强制无动画隐藏状态栏和导航栏
       hide(WindowInsetsCompat.Type.statusBars())
       hide(WindowInsetsCompat.Type.navigationBars())
       systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -991,13 +965,14 @@ private fun setupSystemUI() {
     Log.e(TAG, "Failed to setup system UI insets", e)
   }
 
-  // 👇 核心修改：把原来的 if 判断删掉，强制加上 FULLSCREEN
+  // Don't use LOW_PROFILE if we plan to show status bar with controls
+  // LOW_PROFILE causes only icons to show without background
   @Suppress("DEPRECATION")
   binding.root.systemUiVisibility =
     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
       View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
       View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-      View.SYSTEM_UI_FLAG_FULLSCREEN // 强制全屏，无视设置里的开关
+      if (playerPreferences.showSystemStatusBar.get()) 0 else View.SYSTEM_UI_FLAG_LOW_PROFILE
 }
   @RequiresApi(Build.VERSION_CODES.P)
   private fun restoreSystemUI() {
