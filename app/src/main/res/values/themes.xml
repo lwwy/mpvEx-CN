@@ -12,6 +12,9 @@
         <item name="android:windowNoTitle">true</item>
         <!-- 把启动背景设为纯黑，防止第一帧画面闪白或闪现状态栏 -->
         <item name="android:windowBackground">@android:color/black</item>
+        
+        <!-- 👇 加上这一行！告诉系统连状态栏的底色都别画 -->
+        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
     </style>
 
 </resources>
