@@ -363,9 +363,17 @@ class PlayerActivity :
 
   @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
-    enableEdgeToEdge()
-    super.onCreate(savedInstanceState)
-    setContentView(binding.root)
+  enableEdgeToEdge()
+  super.onCreate(savedInstanceState)
+
+  // 👇 核心新增：在加载视图前，瞬间强行隐藏系统状态栏，防止闪现
+  val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+  windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+  windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+
+  setContentView(binding.root)
+  
+  // ... 下面的 volumeControlStream 等原有代码保持不动 ...
 
     // OPTIMIZATION: Set volume control stream so hardware buttons control media volume
     volumeControlStream = AudioManager.STREAM_MUSIC
