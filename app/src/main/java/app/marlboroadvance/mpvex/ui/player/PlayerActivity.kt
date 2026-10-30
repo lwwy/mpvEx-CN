@@ -892,7 +892,7 @@ override fun onPause() {
   }
 
   super.onStop()
-  }
+} // 👈 这里才是正确的闭合位置
 @RequiresApi(Build.VERSION_CODES.P)
 override fun onStart() {
   super.onStart()
