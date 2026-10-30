@@ -964,8 +964,8 @@ private fun setupSystemUI() {
   try {
     windowInsetsController.apply {
       // 👇 强制无动画隐藏状态栏和导航栏
-      hide(WindowInsetsCompat.Type.statusBars(), true)
-      hide(WindowInsetsCompat.Type.navigationBars(), true)
+      hide(WindowInsetsCompat.Type.statusBars())
+      hide(WindowInsetsCompat.Type.navigationBars())
       systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
   } catch (e: Exception) {
