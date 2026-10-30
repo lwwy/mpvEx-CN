@@ -42,8 +42,6 @@ data class PlayerScreen(
       addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
       
-      // 👇 新增这一行：强制系统禁用启动动画，瞬间切换
-      addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION) 
       
       launchSource?.let { putExtra("launch_source", it) }
     }
