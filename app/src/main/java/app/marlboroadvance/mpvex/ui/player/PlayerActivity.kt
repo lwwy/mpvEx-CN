@@ -780,42 +780,43 @@ private fun setupPipHelper() {
   }
 
   @RequiresApi(Build.VERSION_CODES.P)
-  override fun onPause() {
-    if (isDecoderRestarting) {
-      super.onPause()
-      return
-    }
-    runCatching {
-      val isInPip = isInPictureInPictureMode
-      val shouldPause = (!audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) || 
-                        (isUserFinishing && !isManualBackgroundPlayback)
-
-      // OPTIMIZATION: Stop playback immediately if finishing to reduce cleanup overhead
-      if (isFinishing && !isManualBackgroundPlayback) {
-        viewModel.pause()
-        // Tell MPV to stop processing to reduce busywork during cleanup
-        MPVLib.command("stop")
-      } else if (!isInPip && shouldPause) {
-        wasPlayingBeforePause = !(viewModel.paused ?: true)
-        viewModel.pause()
-      }
-
-      // Restore UI immediately when user is finishing for instant feedback
-      if (isUserFinishing && !isInPip && !isManualBackgroundPlayback) {
-        restoreSystemUI()
-      }
-
-      // OPTIMIZATION: Only save if not finishing (onDestroy will handle final save)
-      if (!isFinishing) {
-        saveVideoPlaybackState(fileName)
-      }
-    }.onFailure { e ->
-      Log.e(TAG, "Error during onPause", e)
-    }
-
+override fun onPause() {
+  if (isDecoderRestarting) {
     super.onPause()
+    return
+  }
+  runCatching {
+    val isInPip = isInPictureInPictureMode
+    val shouldPause = (!audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) || 
+                      (isUserFinishing && !isManualBackgroundPlayback)
+
+    // OPTIMIZATION: Stop playback immediately if finishing to reduce cleanup overhead
+    if (isFinishing && !isManualBackgroundPlayback) {
+      viewModel.pause()
+      // Tell MPV to stop processing to reduce busywork during cleanup
+      MPVLib.command("stop")
+    } else if (!isInPip && shouldPause) {
+      wasPlayingBeforePause = !(viewModel.paused ?: true)
+      viewModel.pause()
+      // 👇 核心修复：强行给底层 C++ 引擎发送暂停指令，掐断后台耗电！
+      MPVLib.setPropertyBoolean("pause", true)
+    }
+
+    // Restore UI immediately when user is finishing for instant feedback
+    if (isUserFinishing && !isInPip && !isManualBackgroundPlayback) {
+      restoreSystemUI()
+    }
+
+    // OPTIMIZATION: Only save if not finishing (onDestroy will handle final save)
+    if (!isFinishing) {
+      saveVideoPlaybackState(fileName)
+    }
+  }.onFailure { e ->
+    Log.e(TAG, "Error during onPause", e)
   }
 
+  super.onPause()
+}
   @RequiresApi(Build.VERSION_CODES.P)
   override fun finish() {
     if (isDecoderRestarting) {
@@ -862,34 +863,34 @@ private fun setupPipHelper() {
   }
 
   override fun onStop() {
-    if (isDecoderRestarting) {
-      super.onStop()
-      return
-    }
-    runCatching {
-      pipHelper.onStop()
-      saveVideoPlaybackState(fileName)
-
-      if (noisyReceiverRegistered) {
-        unregisterReceiver(noisyReceiver)
-        noisyReceiverRegistered = false
-      }
-
-      // Handle background playback based on preferences
-      val shouldAllowBackgroundPlayback = isManualBackgroundPlayback || 
-                                          audioPreferences.automaticBackgroundPlayback.get()
-      
-      // Pause playback if background playback is not enabled and user is finishing
-      if (!shouldAllowBackgroundPlayback && (isUserFinishing || isFinishing)) {
-        viewModel.pause()
-      }
-    }.onFailure { e ->
-      Log.e(TAG, "Error during onStop", e)
-    }
-
+  if (isDecoderRestarting) {
     super.onStop()
+    return
+  }
+  runCatching {
+    pipHelper.onStop()
+    saveVideoPlaybackState(fileName)
+
+    if (noisyReceiverRegistered) {
+      unregisterReceiver(noisyReceiver)
+      noisyReceiverRegistered = false
+    }
+
+    // 👇 修改点 1：去掉 isUserFinishing 的限制，只要没开后台播放，切后台/息屏就暂停
+    val shouldAllowBackgroundPlayback = isManualBackgroundPlayback || 
+                                        audioPreferences.automaticBackgroundPlayback.get()
+    
+    if (!shouldAllowBackgroundPlayback) {
+      viewModel.pause()
+      // 👇 修改点 2：强行给底层 C++ 引擎发送暂停指令，彻底断绝后台偷跑！
+      MPVLib.setPropertyBoolean("pause", true)
+    }
+  }.onFailure { e ->
+    Log.e(TAG, "Error during onStop", e)
   }
 
+  super.onStop()
+  }
 @RequiresApi(Build.VERSION_CODES.P)
 override fun onStart() {
   super.onStart()
