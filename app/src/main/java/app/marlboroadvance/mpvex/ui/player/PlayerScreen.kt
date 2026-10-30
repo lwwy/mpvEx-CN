@@ -34,16 +34,20 @@ data class PlayerScreen(
     LocalBackStack.current
 
     LaunchedEffect(source) {
-      val uri = resolveToUri(source)
-      val intent =
-        Intent(Intent.ACTION_VIEW).apply {
-          data = uri
-          setClass(context, PlayerActivity::class.java)
-          addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-          addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          launchSource?.let { putExtra("launch_source", it) }
-        }
-      context.startActivity(intent)
+  val uri = resolveToUri(source)
+  val intent =
+    Intent(Intent.ACTION_VIEW).apply {
+      data = uri
+      setClass(context, PlayerActivity::class.java)
+      addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      
+      // 👇 新增这一行：强制系统禁用启动动画，瞬间切换
+      addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION) 
+      
+      launchSource?.let { putExtra("launch_source", it) }
+    }
+  context.startActivity(intent)
     }
   }
 }
